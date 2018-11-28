@@ -1,0 +1,21 @@
+{
+  "name": "puppeteer-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/csv-parse": "^1.1.11",
+    "@types/node": "^10.12.10",
+    "@types/node-fetch": "^2.1.4",
+    "@types/puppeteer": "^1.10.0",
+    "csv-parse": "^4.0.1",
+    "node-fetch": "^2.3.0",
+    "puppeteer": "^1.10.0",
+    "typescript": "^3.1.6"
+  }
+}
