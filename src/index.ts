@@ -11,8 +11,6 @@ function findavatar(input: string): string
 (async () => {
     const response = await fetch("https://raw.githubusercontent.com/Ragzouken/bitsy-archive/master/index.txt");
     const content = await response.text();
-    const lines = content.split("\n");
-    lines.splice(0, 1);
 
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
