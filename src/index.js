@@ -21,8 +21,6 @@ function findavatar(input) {
 (() => __awaiter(this, void 0, void 0, function* () {
     const response = yield node_fetch_1.default("https://raw.githubusercontent.com/Ragzouken/bitsy-archive/master/index.txt");
     const content = yield response.text();
-    const lines = content.split("\n");
-    lines.splice(0, 1);
     const browser = yield puppeteer_1.default.launch();
     const page = yield browser.newPage();
     const records = sync_1.default(content, { skip_empty_lines: true });
@@ -30,29 +28,47 @@ function findavatar(input) {
     for (let i in records) {
         const line = records[i];
         const [boid, date, title, author, url, ...notes] = line;
+        const path = `./bitsies/${boid}.bitsy.txt`;
+        if (fs_1.default.existsSync(path))
+            continue;
         try {
-            yield page.goto(url);
-            yield page.$eval(".load_iframe_btn", button => button.click()).catch(error => undefined);
+            yield page.goto(url, { waitUntil: "networkidle2" });
+            yield page.$eval(".load_iframe_btn", button => button.click())
+                .catch(error => undefined);
             const iframe = yield page.$eval("iframe", frame => frame.src)
                 .catch(error => undefined);
             if (iframe) {
-                yield page.goto(iframe).catch(error => console.log("can't enter iframe"));
+                yield page.goto(iframe, { waitUntil: "networkidle2" })
+                    .catch(error => console.log("can't enter iframe"));
             }
             let data = "#no data";
             try {
                 data = yield page.$eval("#exportedGameData", data => data.innerHTML);
             }
             catch (e) {
-                data = yield page.$eval("script", script => script.innerHTML);
-                data = data.match(/var exportedGameData = "(.*)";\n/)[1];
-                data = data.replace(/\\n/g, "\n");
+                // TODO: can't assume it's the first script tag...
+                const scripts = yield page.$$eval("script", scripts => scripts.map(script => script.innerHTML));
+                const pattern = /var exportedGameData = "(.*)";\n/;
+                const matching = scripts.filter(script => script.match(pattern));
+                if (matching.length == 1) {
+                    data = matching[0].match(pattern)[1];
+                    data = data.replace(/\\n/g, "\n");
+                }
+                else if (matching.length == 0) {
+                    throw Error("No matching script tags.");
+                }
+                else if (matching.length >= 2) {
+                    throw Error("Multiple matching script tags.");
+                }
             }
-            fs_1.default.writeFile(`./bitsies/${boid}.bitsy.txt`, data, () => { });
+            fs_1.default.writeFile(path, data, () => { });
         }
         catch (e) {
             console.log(`${i} failed ${boid} ${title} (${url})`);
             console.log(e.message);
+            continue;
         }
+        console.log(`${i} success ${boid} ${title} (${url})`);
     }
     yield browser.close();
 }))();
