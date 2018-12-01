@@ -20,7 +20,13 @@ function readTextFile(path: string): Promise<string>
 async function loadBitsyData(boid: string): Promise<string>
 {
     const path = `./bitsies/${boid}.bitsy.txt`;
-    const text = await readTextFile(path);
+    let text = await readTextFile(path);
+
+    // TODO: need a real way to remove these horrid linebreaks
+    if (text && text.match("\r"))
+    {
+        text = text.split("\n").map(line => line.trim()).join("\n");
+    }
 
     return text;
 }
@@ -34,7 +40,7 @@ function lineToColor(line: string): number
 
 function extractPalettes(gamedata: string): Map<string, number[]>
 {
-    const regex = /PAL (\w+)\n(?:NAME .+\n)?([\d+,\n]+)\n/g;
+    const regex = /PAL (\w+)\n(?:NAME .+\n)?((?:\d+,\d+,\d+\n)+)\n/g;
     const matches = gamedata.match(regex);
     const palettes = new Map<string, number[]>();
 
@@ -56,7 +62,7 @@ function extractPalettes(gamedata: string): Map<string, number[]>
 
 function extractAvatarFrames(gamedata: string): boolean[][]
 {
-    const match = gamedata.match(/SPR A\n([01>\n]+)POS/);
+    const match = gamedata.match(/SPR A\n([01>\n]+)/);
     const frames: boolean[][] = [];
 
     if (match)
@@ -124,16 +130,32 @@ async function run()
 
         const gamedata = await loadBitsyData(boid);
 
-        if (!gamedata) continue;
-
-        const palettes = extractPalettes(gamedata);
-        const frames = extractAvatarFrames(gamedata);
-        const avatar = await renderFrames(frames, palettes.get("0")!);
-
-        if (avatar.length >= 1)
+        if (!gamedata)
         {
-            images0.push(avatar[0]);
-            images1.push(avatar[1] || avatar[0]);
+            console.log(`${boid}: no data`);
+            continue;
+        }
+
+        try
+        {
+            const palettes = extractPalettes(gamedata);
+            const frames = extractAvatarFrames(gamedata);
+            const avatar = await renderFrames(frames, palettes.get("0")!);
+
+            if (avatar.length >= 1)
+            {
+                images0.push(avatar[0]);
+                images1.push(avatar[1] || avatar[0]);
+            }
+            else
+            {
+                console.log(`${boid}: no avatar`);
+            }
+        }
+        catch (e)
+        {
+            console.log(`${boid} (${title}): bad data`);
+            console.log(e);
         }
     }
     
