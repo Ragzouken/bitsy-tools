@@ -1,0 +1,145 @@
+import jimp from "jimp";
+import fs from "fs";
+import fetch from "node-fetch";
+import csv from "csv-parse/lib/sync";
+
+const white = jimp.rgbaToInt(255, 255, 255, 255);
+const black = jimp.rgbaToInt(  0,   0,   0, 255);
+
+function readTextFile(path: string): Promise<string>
+{
+    return new Promise(resolve =>
+    {
+        fs.readFile(path, "UTF-8", (err, text) =>
+        {
+            resolve(text);
+        });
+    });
+}
+
+async function loadBitsyData(boid: string): Promise<string>
+{
+    const path = `./bitsies/${boid}.bitsy.txt`;
+    const text = await readTextFile(path);
+
+    return text;
+}
+
+function lineToColor(line: string): number
+{
+    const [r, g, b, ..._] = line.split(",").map(v => +v);
+
+    return jimp.rgbaToInt(r, g, b, 255);
+}
+
+function extractPalettes(gamedata: string): Map<string, number[]>
+{
+    const regex = /PAL (\w+)\n(?:NAME .+\n)?([\d+,\n]+)\n/g;
+    const matches = gamedata.match(regex);
+    const palettes = new Map<string, number[]>();
+
+    if (!matches) return palettes;
+
+    let result: RegExpExecArray | null;
+
+    while (null !== (result = regex.exec(gamedata)))
+    {
+        const id = result[1];
+        const colors = result[2].trim().split("\n")
+                                .map(line => lineToColor(line));
+
+        palettes.set(id, colors);
+    }
+
+    return palettes;
+}
+
+function extractAvatarFrames(gamedata: string): boolean[][]
+{
+    const match = gamedata.match(/SPR A\n([01>\n]+)POS/);
+    const frames: boolean[][] = [];
+
+    if (match)
+    {
+        const frameDatas = match[1].replace(/[^01>]/g, "").split(">");
+        frameDatas.map(data => data.split("").map(v => v == "1"))
+                  .forEach(frame => frames.push(frame));
+    }
+
+    return frames;
+}
+
+async function renderFrames(frames: boolean[][],
+                            palette: number[]): Promise<jimp[]>
+{
+    const images = [];
+
+    for (let frame of frames)
+    {
+        const image = await jimp.create(8, 8, 0);
+
+        frame.forEach((value, index) =>
+        {
+            const x = index % 8;
+            const y = Math.floor(index / 8);
+
+            image.setPixelColor(value ? palette[2] : palette[0], x, y);
+        });
+
+        images.push(image);
+    }
+
+    return images;
+}
+
+async function collage(images: jimp[], columns = 35): Promise<jimp>
+{
+    const rows = Math.ceil(images.length / columns);  
+
+    const collage = await jimp.create(columns * 8, rows * 8, black);
+
+    images.forEach((image, i) =>
+    {
+        const x = i % columns;
+        const y = Math.floor(i / columns);
+
+        collage.blit(image, x * 8, y * 8);
+    });
+
+    return collage;
+}
+
+async function run()
+{
+    const response = await fetch("https://raw.githubusercontent.com/Ragzouken/bitsy-archive/master/index.txt");
+    const content = await response.text();
+    const records = csv(content, {skip_empty_lines: true}) as string[][];
+    const images: jimp[] = [];
+
+    for (let i in records)
+    {
+        const line = records[i];
+        const [boid, date, title, author, url, ...notes] = line;
+
+        const gamedata = await loadBitsyData(boid);
+
+        if (!gamedata) continue;
+
+        const palettes = extractPalettes(gamedata);
+        const frames = extractAvatarFrames(gamedata);
+        const avatar = await renderFrames(frames, palettes.get("0")!);
+
+        if (avatar.length >= 1)
+        {
+            images.push(avatar[0]);
+        }
+    }
+    
+    const coll = await collage(images);
+    coll.resize(coll.getWidth() * 4,
+                coll.getHeight() * 4,
+                jimp.RESIZE_NEAREST_NEIGHBOR);
+    coll.write("images/test.png");
+}
+
+run();

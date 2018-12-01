@@ -30,20 +30,22 @@ async function scrape(browser: puppeteer.Browser,
         try
         {
             await fse.outputFile(filePath, await response.buffer());
+
+            return;
         }
         catch (e)
         {
-            console.log(`problem with response ${response.url()} (${response.status()}: ${response.statusText()})`);
-            
-            try 
-            {
-                await fse.outputFile(filePath, await fetch(response.url()).then(r => r.buffer()));
-            }
-            catch (e)
-            {
-                console.log(`failed ${response.url()}`);
-                console.log(e);
-            }
+            console.log(`problem with response ${response.url()} (${response.status()}: ${response.statusText()})`);    
+        }
+
+        try 
+        {
+            await fse.outputFile(filePath, await fetch(response.url()).then(r => r.buffer()));
+        }
+        catch (e)
+        {
+            console.log(`failed ${response.url()}`);
+            console.log(e);
         }
     });
 
