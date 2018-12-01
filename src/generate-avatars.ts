@@ -40,7 +40,7 @@ function lineToColor(line: string): number
 
 function extractPalettes(gamedata: string): Map<string, number[]>
 {
-    const regex = /PAL (\w+)\n(?:NAME .+\n)?((?:\d+,\d+,\d+\n)+)\n/g;
+    const regex = /PAL (\w+)\n(?:NAME .+\n)?((?:[\d, ]+\n)+)/g;
     const matches = gamedata.match(regex);
     const palettes = new Map<string, number[]>();
 
@@ -120,6 +120,7 @@ async function run()
     const response = await fetch("https://raw.githubusercontent.com/Ragzouken/bitsy-archive/master/index.txt");
     const content = await response.text();
     const records = csv(content, {skip_empty_lines: true}) as string[][];
+    records.splice(0, 1);
     const images0: jimp[] = [];
     const images1: jimp[] = [];
 
@@ -132,7 +133,7 @@ async function run()
 
         if (!gamedata)
         {
-            console.log(`${boid}: no data`);
+            console.log(`${boid} (${title}): no data`);
             continue;
         }
 
@@ -140,6 +141,13 @@ async function run()
         {
             const palettes = extractPalettes(gamedata);
             const frames = extractAvatarFrames(gamedata);
+
+            if (!palettes.has("0"))
+            {
+                console.log(`${boid} (${title}): no palette 0`);
+                continue;
+            }
+
             const avatar = await renderFrames(frames, palettes.get("0")!);
 
             if (avatar.length >= 1)
@@ -149,7 +157,7 @@ async function run()
             }
             else
             {
-                console.log(`${boid}: no avatar`);
+                console.log(`${boid} (${title}): no avatar`);
             }
         }
         catch (e)
