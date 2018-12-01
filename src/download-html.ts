@@ -22,29 +22,32 @@ async function scrape(browser: puppeteer.Browser,
             filePath = `${filePath}/index.html`;
         }
 
+        if (response.status() == 207)
+        {
+            console.log(`hmm ${response.url()}`);
+        }
+
         try
         {
             await fse.outputFile(filePath, await response.buffer());
         }
         catch (e)
         {
-            console.log(`problem with response ${response.url()}`);
-            //console.log(e);
+            console.log(`problem with response ${response.url()} (${response.status()}: ${response.statusText()})`);
+            
+            try 
+            {
+                await fse.outputFile(filePath, await fetch(response.url()).then(r => r.buffer()));
+            }
+            catch (e)
+            {
+                console.log(`failed ${response.url()}`);
+                console.log(e);
+            }
         }
     });
 
     await page.goto(url, {waitUntil: 'networkidle0'});
-
-    const srcs = await page.$$eval("source", sources => sources.map(source => (source as HTMLSourceElement).src));
-
-    for (let src of srcs)
-    {
-        const url = new URL(src); 
-        const filepath = path.resolve(`./sources/${boid}${url.pathname}`);
-
-        await fse.outputFile(filepath, await fetch(src).then(r => r.buffer()));
-    }
-
     await page.close();
 }
 
