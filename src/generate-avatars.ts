@@ -114,7 +114,8 @@ async function run()
     const response = await fetch("https://raw.githubusercontent.com/Ragzouken/bitsy-archive/master/index.txt");
     const content = await response.text();
     const records = csv(content, {skip_empty_lines: true}) as string[][];
-    const images: jimp[] = [];
+    const images0: jimp[] = [];
+    const images1: jimp[] = [];
 
     for (let i in records)
     {
@@ -131,15 +132,22 @@ async function run()
 
         if (avatar.length >= 1)
         {
-            images.push(avatar[0]);
+            images0.push(avatar[0]);
+            images1.push(avatar[1] || avatar[0]);
         }
     }
     
-    const coll = await collage(images);
-    coll.resize(coll.getWidth() * 4,
-                coll.getHeight() * 4,
-                jimp.RESIZE_NEAREST_NEIGHBOR);
-    coll.write("images/test.png");
+    const collage0 = await collage(images0);
+    const collage1 = await collage(images1);
+
+    collage0.resize(collage0.getWidth() * 4,
+                    collage0.getHeight() * 4,
+                    jimp.RESIZE_NEAREST_NEIGHBOR);
+    collage1.resize(collage1.getWidth() * 4,
+                    collage1.getHeight() * 4,
+                    jimp.RESIZE_NEAREST_NEIGHBOR);
+    collage0.write("images/avatars0.png");
+    collage1.write("images/avatars1.png");
 }
 
 run();
