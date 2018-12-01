@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "download-data": "tsc && node ./build/index.js",
+    "download-data": "tsc && node ./build/download-data.js",
     "download-html": "tsc && node ./build/download-html.js",
     "generate-avatars": "tsc && node ./build/generate-avatars.js",
     "test": "echo \"Error: no test specified\" && exit 1"
