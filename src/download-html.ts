@@ -82,7 +82,7 @@ async function scrapeGame(browser: puppeteer.Browser, url: string, boid: string)
 }
 
 (async () => {
-    const response = await fetch("https://raw.githubusercontent.com/Ragzouken/bitsy-archive/master/index.txt");
+    const response = await fetch("https://docs.google.com/spreadsheets/d/1eBUgCYOnMJ9REHuZdTodc6Ft2Vs6JXbH4K-bIgL9TPc/gviz/tq?tqx=out:csv&sheet=Bitsy");
     const content = await response.text();
     const browser = await puppeteer.launch();
 
