@@ -6,6 +6,8 @@
   "scripts": {
     "download-data": "tsc && node ./build/download-data.js",
     "download-html": "tsc && node ./build/download-html.js",
+    "scrape-metadata": "tsc && node ./build/scrape-metadata.js",
+    "scrape-urls": "tsc && node ./build/scrape-urls.js",
     "generate-avatars": "tsc && node ./build/generate-avatars.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

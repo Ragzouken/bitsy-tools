@@ -1,23 +1,14 @@
 import puppeteer from "puppeteer";
-import fetch from "node-fetch"; 
 import fs from "fs";
 import csv from "csv-parse/lib/sync";
-
-function findavatar(input: string): string
-{
-    return input.match(/SPR A\n([01>\n]+)\n/)![0];
-}
+import getRecords from "./records";
 
 (async () => {
-    const response = await fetch("https://docs.google.com/spreadsheets/d/1eBUgCYOnMJ9REHuZdTodc6Ft2Vs6JXbH4K-bIgL9TPc/gviz/tq?tqx=out:csv&sheet=Bitsy");
-    const content = await response.text();
+    const records = await getRecords();
 
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     
-    const records = csv(content, {skip_empty_lines: true}) as string[][];
-    console.log(records.length);
-
     for (let i in records)
     {
         const line = records[i];

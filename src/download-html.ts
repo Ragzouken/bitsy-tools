@@ -49,13 +49,13 @@ async function scrape(browser: puppeteer.Browser,
         }
     });
 
-    await page.goto(url, {waitUntil: 'networkidle0'});
+    await page.goto(url, {waitUntil: 'networkidle0', timeout: 30000});
     await page.close();
 }
 
 async function findGameURL(page: puppeteer.Page, url: string): Promise<string>
 {
-    await page.goto(url, {waitUntil: "networkidle2"});
+    await page.goto(url, {waitUntil: "networkidle2", timeout: 30000});
     await page.$eval(".load_iframe_btn", button => (button as HTMLButtonElement).click())
     .catch(error => undefined);
     
@@ -99,6 +99,8 @@ async function scrapeGame(browser: puppeteer.Browser, url: string, boid: string)
     {
         const line = records[i];
         const [boid, date, title, author, url, ...notes] = line;
+
+        if (fse.existsSync(`./sources/${boid}/`)) continue;
 
         try
         {

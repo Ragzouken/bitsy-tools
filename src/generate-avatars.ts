@@ -1,7 +1,6 @@
 import jimp from "jimp";
 import fs from "fs";
-import fetch from "node-fetch";
-import csv from "csv-parse/lib/sync";
+import getRecords from './records';
 
 const white = jimp.rgbaToInt(255, 255, 255, 255);
 const black = jimp.rgbaToInt(  0,   0,   0, 255);
@@ -98,13 +97,16 @@ async function renderFrames(frames: boolean[][],
     return images;
 }
 
-async function collage(images: jimp[], columns = 35): Promise<jimp>
+async function collage(images: jimp[], 
+                       columns = 35,
+                       maxRows = Infinity): Promise<jimp>
 {
-    const rows = Math.ceil(images.length / columns);  
+    const rows = Math.min(maxRows, Math.ceil(images.length / columns));  
+    const cells = Math.min(images.length, columns * rows);
 
     const collage = await jimp.create(columns * 8, rows * 8, black);
 
-    images.forEach((image, i) =>
+    images.slice(0, cells).forEach((image, i) =>
     {
         const x = i % columns;
         const y = Math.floor(i / columns);
@@ -117,10 +119,7 @@ async function collage(images: jimp[], columns = 35): Promise<jimp>
 
 async function run()
 {
-    const response = await fetch("https://docs.google.com/spreadsheets/d/1eBUgCYOnMJ9REHuZdTodc6Ft2Vs6JXbH4K-bIgL9TPc/gviz/tq?tqx=out:csv&sheet=Bitsy");
-    const content = await response.text();
-    const records = csv(content, {skip_empty_lines: true}) as string[][];
-    records.splice(0, 1);
+    const records = await getRecords();
     const images0: jimp[] = [];
     const images1: jimp[] = [];
 
@@ -167,8 +166,10 @@ async function run()
         }
     }
     
-    const collage0 = await collage(images0);
-    const collage1 = await collage(images1);
+    console.log(images0.length - (30 * 50));
+
+    const collage0 = await collage(images0, 30);//, 50);
+    const collage1 = await collage(images1, 30);//, 50);
 
     collage0.resize(collage0.getWidth() * 4,
                     collage0.getHeight() * 4,
